@@ -1,4 +1,4 @@
-name: Fix Sanatorio Allende JCI badge
+name: Sync TRIAGE benchmarks
 on:
   workflow_dispatch:
   push:
@@ -7,26 +7,48 @@ on:
 permissions:
   contents: write
 jobs:
-  fix:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add Allende to JCI badge list
+      - name: Sync LATAM top 10 and JCI badges
         run: |
           python - <<'PY'
           from pathlib import Path
+          import json
+
+          p=Path('triage-data.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          d['latam']=[
+            {'name':'EsSalud · Red Asistencial La Libertad','country':'Perú','model':'Triaje digital con IA','provider':'EsSalud / desarrollo institucional','scale':'5 niveles','aiRole':'Analiza signos vitales/datos y sugiere prioridad','humanRole':'Médico de triaje evalúa y valida','evidence':'Productivo en 4 hospitales desde 2025 · ticket, llamado automático y pantalla de espera','priority':'Muy alta','priorityClass':'ok','productive':True,'jci':False},
+            {'name':'Fundación Santa Fe de Bogotá','country':'Colombia','model':'Triage presencial estructurado de alta complejidad','provider':'Institucional','scale':'ESI / clasificación por prioridad','aiRole':'Sin evidencia de IA asignando triage; IA aplicada a circuitos tiempo-dependientes','humanRole':'Enfermería / equipo de Urgencias','evidence':'JCI reacreditada 2025 · ~84.000 casos/año (2022) · 98 camas de Urgencias','priority':'Muy alta','priorityClass':'ok','productive':True,'jci':True},
+            {'name':'Fundación Valle del Lili','country':'Colombia','model':'Triage presencial estructurado + soporte digital','provider':'Institucional','scale':'5 niveles','aiRole':'Sin evidencia pública de IA clasificatoria en triage','humanRole':'Médicos + Enfermería','evidence':'JCI 2026 · software integrado a HCE · referencia histórica ~72.693 urgencias/año','priority':'Muy alta','priorityClass':'ok','productive':True,'jci':True},
+            {'name':'Einstein Hospital Israelita','country':'Brasil','model':'Triage estructurado + ecosistema avanzado de soporte clínico','provider':'Institucional','scale':'ESI','aiRole':'IA diagnóstica/predictiva alrededor de Urgencias; no confirmada para prioridad inicial','humanRole':'Enfermería','evidence':'JCI · 9º ciclo evaluado en 2024 · referencia de Urgencias con ESI','priority':'Muy alta','priorityClass':'ok','productive':True,'jci':True},
+            {'name':'UPA Campos Salles','country':'Brasil','model':'IA analítica + clasificación de riesgo','provider':'CloudSaúde / Sinamnese','scale':'Manchester / flujo propio','aiRole':'Recomienda y alerta','humanRole':'Enfermería decide','evidence':'8.000+ pacientes/mes · integración signos vitales · HL7/FHIR (proveedor)','priority':'Muy alta','priorityClass':'ok','productive':True,'jci':False},
+            {'name':'Hospital Sírio-Libanês','country':'Brasil','model':'Urgencias de alta complejidad · triage a profundizar','provider':'Institucional','scale':'A confirmar','aiRole':'Ecosistema digital avanzado; rol específico de IA en triage a confirmar','humanRole':'A confirmar','evidence':'JCI hospitalaria desde 2007 · reacreditaciones periódicas','priority':'Alta','priorityClass':'ok','productive':True,'jci':True},
+            {'name':'Subred Sur Occidente · Oportuna','country':'Colombia','model':'IA para monitoreo post-triage','provider':'Oportuna','scale':'Oportunidad por categoría','aiRole':'Alertas de espera y oportunidad','humanRole':'Equipo clínico','evidence':'>640.000 alertas · Triage 2: 29→18 min','priority':'Alta','priorityClass':'ok','productive':True,'jci':False},
+            {'name':'Hospital Adriana Cousiño de Quintero · Smart Triage','country':'Chile','model':'Soporte digital/IA para triage y gestión de espera','provider':'Smart Lab / Smart Triage','scale':'Clasificación de Urgencias · detalle a confirmar','aiRole':'Apoya decisiones, prioridades, alertas y cola inteligente','humanRole':'Personal clínico de triage','evidence':'Pilotaje hospitalario · soporte a triage, monitoreo y experiencia del paciente','priority':'Alta','priorityClass':'part','productive':False,'jci':False},
+            {'name':'Clínica Imbanaco · Quirónsalud','country':'Colombia','model':'Triage digital estructurado','provider':'Treelogic / SET','scale':'SET','aiRole':'Software estructurado determina gravedad y apoya priorización por riesgo','humanRole':'Profesional de triage','evidence':'Implantación SET en Urgencias confirmada en abril de 2026','priority':'Alta','priorityClass':'ok','productive':True,'jci':False},
+            {'name':'Subred Integrada Sur · Doc-Tok','country':'Colombia','model':'IA para recomendación de triage','provider':'Doc-Tok','scale':'Clasificación mediante preguntas / algoritmo predictivo','aiRole':'Asistente IA propone clasificación y detecta criticidad','humanRole':'Validación profesional prevista','evidence':'Preincubación / piloto; no productivo','priority':'Alta','priorityClass':'part','productive':False,'jci':False}
+          ]
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          old="['Hospital Italiano','Hospital Austral','Hospital Alemán','Hospital Privado Universitario de Córdoba'].includes(r.name)"
-          new="['Hospital Italiano','Hospital Austral','Hospital Alemán','Hospital Privado Universitario de Córdoba','Sanatorio Allende'].includes(r.name)"
-          if old not in s:
-              raise SystemExit('Target JCI list not found')
-          p.write_text(s.replace(old,new),encoding='utf-8')
+          old="table('#latamTable',DATA.latam,[['name','Institución'],['country','País'],['model','Modelo'],['provider','Proveedor'],['scale','Escala'],['aiRole','Rol IA'],['humanRole','Rol humano'],['evidence','Evidencia'],['priority','Prioridad']]);"
+          new="const latamRows=(DATA.latam||[]).map(x=>({...x,referenceType:(x.productive?'Caso productivo':'Piloto / seguimiento')+' · '+x.country,technology:x.provider+(x.aiRole?' · '+x.aiRole:''),status:x.productive?'Productivo · validado':'Piloto / seguimiento',statusClass:x.productive?'ok':'part',key:x.evidence,next:x.productive?'Profundizar métricas operativas, dotación e integración':'Validar resultados, alcance y madurez para producción',source:x.provider+' · benchmark institucional'}));table('#latamTable',latamRows,[['name','Institución / caso'],['referenceType','Tipo'],['model','Modelo'],['humanRole','Responsable'],['scale','Escala / protocolo'],['technology','Tecnología'],['status','Estado'],['key','Dato clave'],['next','Pendiente'],['source','Fuente']]);"
+          if old in s:
+              s=s.replace(old,new)
+          oldj="['Hospital Italiano','Hospital Austral','Hospital Alemán','Hospital Privado Universitario de Córdoba','Sanatorio Allende'].includes(r.name)"
+          newj="['Hospital Italiano','Hospital Austral','Hospital Alemán','Hospital Privado Universitario de Córdoba','Sanatorio Allende','Fundación Santa Fe de Bogotá','Fundación Valle del Lili','Einstein Hospital Israelita','Hospital Sírio-Libanês'].includes(r.name)"
+          if oldj in s:
+              s=s.replace(oldj,newj)
+          p.write_text(s,encoding='utf-8')
           PY
-      - name: Commit fix
+      - name: Commit sync
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git diff --cached --quiet || git commit -m "Show JCI badge for Sanatorio Allende"
+          git add index.html triage-data.json
+          git diff --cached --quiet || git commit -m "Sync LATAM benchmark top 10 from TRIAGE"
           git push
