@@ -1,0 +1,33 @@
+name: Fix provider rendering
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-provider-render.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch table renderer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="function table(id,rows,cols){$(id).innerHTML="
+          new="function table(id,rows,cols){if(!$(id))return;$(id).innerHTML="
+          if old not in s:
+              raise SystemExit('Target renderer pattern not found')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Restore TRIAGE provider comparison rendering"
+          git push
