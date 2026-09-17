@@ -1,0 +1,33 @@
+name: Refine pharmacotherapy JCI framework
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/refine-pharma-jci.yml'
+permissions:
+  contents: write
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update JCI tab and executive KPI
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<div class="m"><b>TS/HIS</b><span>integración pendiente</span></div>','<div class="m"><b>24/7</b><span>modelo objetivo</span></div>')
+          old='''<div id="p-jci" class="pharma-sub"><div class="hero"><div class="eyebrow">JCI · MEDICATION MANAGEMENT AND USE</div><h2>La validación farmacéutica es un control clínico previo a la dispensación</h2><p>El estándar exige revisar la adecuación de las prescripciones y documentar las intervenciones relevantes. La tecnología puede priorizar y asistir, pero la responsabilidad clínica permanece en profesionales habilitados.</p></div><div class="grid g3"><div class="p-card"><span class="tag">REQUERIMIENTO</span><h3>Revisión de prescripciones</h3><p>Dosis, frecuencia, vía, duplicidad, alergias, interacciones, contraindicaciones y criterios institucionales.</p></div><div class="p-card"><span class="tag">SEGURIDAD</span><h3>Antes de dispensar</h3><p>La revisión debe ocurrir antes de dispensar, salvo excepciones clínicas justificadas.</p></div><div class="p-card"><span class="tag">TRAZABILIDAD</span><h3>Intervenciones documentadas</h3><p>Alertas relevantes, comunicación con el prescriptor, aceptación/rechazo y resolución.</p></div></div><div class="portfolio-note"><b>Implicancia:</b> JCI no define una dotación fija de farmacéuticos. El diseño debe demostrar cobertura segura, continuidad, priorización y trazabilidad.</div></div>'''
+          new='''<div id="p-jci" class="pharma-sub"><div class="hero"><div class="eyebrow">JCI · MEDICATION MANAGEMENT AND USE</div><h2>La obligación es asegurar una revisión apropiada de las órdenes; la dotación es una decisión de diseño</h2><p>El marco de Medication Management and Use exige un proceso seguro de revisión de las órdenes de medicación. Para Otamendi, JCI funciona como requisito de seguridad y trazabilidad, no como una regla que determine por sí sola cuántos farmacéuticos deben asignarse.</p><div class="flow"><span class="node">Orden médica</span><span class="arrow">→</span><span class="node">Revisión de adecuación</span><span class="arrow">→</span><span class="node">Clarificación / intervención</span><span class="arrow">→</span><span class="node">Dispensación</span><span class="arrow">→</span><span class="node">Trazabilidad</span></div></div><div class="grid g4"><div class="p-card"><span class="tag">MMU.5.1</span><h3>Revisión de adecuación</h3><p>La orden debe revisarse considerando, entre otros puntos, medicamento, dosis, frecuencia, vía, duplicidad terapéutica, alergias, interacciones, contraindicaciones y criterios institucionales.</p></div><div class="p-card"><span class="tag">EXCEPCIONES</span><h3>No todo escenario es idéntico</h3><p>Las excepciones a la revisión prospectiva deben quedar limitadas a situaciones justificadas, como urgencias o escenarios definidos bajo control directo de un profesional habilitado.</p></div><div class="p-card"><span class="tag">COBERTURA</span><h3>Continuidad del proceso</h3><p>Si la farmacia no opera 24/7, debe existir un mecanismo seguro para la revisión durante la ausencia y el esquema de revisión posterior que corresponda al marco aplicable.</p></div><div class="p-card"><span class="tag">TRAZABILIDAD</span><h3>Intervención documentada</h3><p>El modelo debe permitir reconstruir la orden evaluada, alertas, intervención farmacéutica, comunicación con el prescriptor y resolución.</p></div></div><div class="model-bottom" style="margin-top:9px"><div class="model-block"><h3>Qué JCI sí condiciona</h3><div class="compact-list"><div class="compact-item"><b>Proceso definido</b>Políticas y responsabilidades explícitas para revisión de órdenes.</div><div class="compact-item"><b>Adecuación clínica</b>Revisión de riesgos relevantes antes de la dispensación cuando corresponda.</div><div class="compact-item"><b>Gestión de excepciones</b>Urgencias y situaciones especiales deben estar definidas y controladas.</div><div class="compact-item"><b>Evidencia</b>La organización debe poder demostrar cómo funciona el control en la práctica.</div></div></div><div class="model-block"><h3>Qué no conviene inferir de JCI</h3><div class="compact-list"><div class="compact-item"><b>Dotación fija</b>No convertir el estándar en una relación automática camas/farmacéutico.</div><div class="compact-item"><b>IA autónoma</b>No asumir que un motor de reglas sustituye por sí solo la revisión profesional requerida.</div><div class="compact-item"><b>Un único modelo horario</b>La cobertura debe diseñarse según riesgo, operación y normativa aplicable.</div><div class="compact-item"><b>100% de alertas manuales</b>La tecnología puede filtrar, priorizar y reducir ruido sin perder trazabilidad.</div></div></div></div><div class="portfolio-note"><b>Lectura para Otamendi:</b> diseñar un sistema que garantice la revisión requerida y concentre el tiempo farmacéutico en riesgo clínico. El KPI operativo no debe ser sólo “órdenes revisadas”, sino <b>% de prescripciones que requieren intervención farmacéutica y minutos farmacéuticos por prescripción</b>.</div></div>'''
+          if old not in s: raise SystemExit('JCI block not found')
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Clarify JCI framework for pharmacotherapy validation'
+          git push
