@@ -1,0 +1,42 @@
+name: Refine TRIAGE IA PoC
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/refine-triage-poc.yml'
+permissions:
+  contents: write
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refine model and PoC content
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('Circuito objetivo: Enfermería interviene por excepción','Circuito objetivo H1: Enfermería interviene por excepción')
+          s=s.replace('La IA estructura y recomienda; el circuito se bifurca según seguridad y calidad de la información.','Hipótesis objetivo a validar en PoC: la IA completa la primera clasificación y el circuito escala a Enfermería ante riesgo, incertidumbre o excepción.')
+          s=s.replace('<b>Control profesional:</b> el médico conserva la decisión asistencial; Enfermería puede corregir, escalar o re-triar. Toda recomendación y cambio debe quedar trazado.','<b>Gobernanza clínica:</b> H1 no elimina el control profesional: desplaza la intervención de Enfermería hacia excepciones. El médico conserva la decisión asistencial posterior. Toda clasificación, escalamiento, corrección y re-triage debe quedar trazado.')
+          s=s.replace('<h3>Carga operativa · hora P90</h3>','<h3>Hipótesis operativa · hora P90</h3>')
+          s=s.replace('<strong>9–10</strong><span>seguirían la vía principal</span>','<strong>9–10</strong><span>vía principal · hipótesis 70–80%</span>')
+          s=s.replace('<strong>3–4</strong><span>requerirían validación</span>','<strong>3–4</strong><span>escalados · hipótesis 20–30%</span>')
+          s=s.replace('<strong>8–12 min</strong><span>de trabajo de Enfermería por hora</span>','<strong>A medir</strong><span>minutos de Enfermería por hora P90</span>')
+          s=s.replace('IA en paralelo, sin modificar la prioridad.<span>Puerta: datos suficientes y ausencia de señales de riesgo.</span>','IA en paralelo, sin modificar la prioridad clínica.<span>Puerta: calidad de datos + desempeño clínico suficiente para iniciar piloto.</span>')
+          s=s.replace('Validación obligatoria en alcance acotado.<span>Puerta: cumplir umbrales o ajustar.</span>','Validación profesional obligatoria en alcance acotado.<span>Puerta: demostrar seguridad, concordancia y trazabilidad.</span>')
+          s=s.replace('IA vía principal y Enfermería por excepción.<span>Decisión: avanzar, ajustar o detener.</span>','H1: IA como primera capa y Enfermería por excepción.<span>Decisión: avanzar, ajustar o detener según resultados del PoC.</span>')
+          old='<h3>Umbrales de aprobación <span class="prelim">preliminares · a validar</span></h3><div class="threshold-grid"><div class="threshold"><span>Sensibilidad en críticos</span><b>≥95%</b></div><div class="threshold"><span>Under-triage crítico</span><b>&lt;1%</b></div><div class="threshold"><span>Concordancia IA–Enfermería</span><b>≥85%</b></div><div class="threshold"><span>Tiempo clasificación</span><b>≤3 min</b></div><div class="threshold"><span>Validación humana</span><b>20–30%</b></div><div class="threshold"><span>Trazabilidad</span><b>100%</b></div></div>'
+          new='<h3>Métricas del PoC <span class="prelim">metas a aprobar antes del piloto</span></h3><div class="threshold-grid"><div class="threshold"><span>Seguridad · sensibilidad críticos</span><b>Meta a validar</b></div><div class="threshold"><span>Seguridad · under-triage crítico</span><b>Meta a validar</b></div><div class="threshold"><span>Desempeño · concordancia IA–Enfermería</span><b>Meta a validar</b></div><div class="threshold"><span>Experiencia · tiempo de clasificación</span><b>Medir baseline → PoC</b></div><div class="threshold"><span>Autonomía · episodios con intervención profesional</span><b>20–30% hipótesis</b></div><div class="threshold"><span>Operación · minutos profesionales / episodio</span><b>KPI principal</b></div><div class="threshold"><span>Calidad · datos completos</span><b>Medir</b></div><div class="threshold"><span>Trazabilidad</span><b>100% requerido</b></div></div>'
+          if old not in s: raise SystemExit('threshold block not found')
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Refine TRIAGE IA operating model and PoC metrics'
+          git push
