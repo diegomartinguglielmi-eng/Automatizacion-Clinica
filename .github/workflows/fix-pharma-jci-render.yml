@@ -1,0 +1,32 @@
+name: Fix pharmacotherapy JCI render
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-pharma-jci-render.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace current JCI placeholder with complete content
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.index('<div id="p-jci" class="pharma-sub">')
+          end=s.index('<div id="p-ben" class="pharma-sub">', start)
+          new='''<div id="p-jci" class="pharma-sub"><div class="hero"><div class="eyebrow">VALIDACIÓN FARMACOTERAPÉUTICA · JCI</div><h2>La obligación es asegurar una revisión apropiada de las órdenes; la dotación es una decisión de diseño</h2><p>JCI funciona como requisito de seguridad y trazabilidad. El modelo operativo debe demostrar revisión de adecuación, gestión de excepciones, continuidad y evidencia; no asumir una relación automática camas/farmacéutico.</p><div class="flow"><span class="node">Orden médica</span><span class="arrow">→</span><span class="node">Revisión de adecuación</span><span class="arrow">→</span><span class="node">Clarificación / intervención</span><span class="arrow">→</span><span class="node">Dispensación</span><span class="arrow">→</span><span class="node">Trazabilidad</span></div></div><div class="grid g4"><div class="p-card"><span class="tag">REVISIÓN</span><h3>Adecuación farmacoterapéutica</h3><p>Dosis, frecuencia, vía, duplicidad, alergias, interacciones, contraindicaciones y criterios institucionales.</p></div><div class="p-card"><span class="tag">EXCEPCIONES</span><h3>Escenarios controlados</h3><p>Urgencias y otras excepciones deben estar explícitamente definidas, justificadas y bajo un mecanismo seguro.</p></div><div class="p-card"><span class="tag">COBERTURA</span><h3>Continuidad del proceso</h3><p>La cobertura debe resolver de forma segura qué ocurre dentro y fuera del horario de Farmacia y cómo se revisan las órdenes pendientes.</p></div><div class="p-card"><span class="tag">TRAZABILIDAD</span><h3>Intervención documentada</h3><p>Debe poder reconstruirse la orden evaluada, alerta, intervención, comunicación con el prescriptor y resolución.</p></div></div><div class="model-bottom" style="margin-top:9px"><div class="model-block"><h3>Qué condiciona el marco JCI</h3><div class="compact-list"><div class="compact-item"><b>Proceso definido</b>Políticas, responsabilidades y alcance explícitos.</div><div class="compact-item"><b>Adecuación clínica</b>Revisión de riesgos relevantes en el momento definido.</div><div class="compact-item"><b>Excepciones</b>Reglas claras para urgencias y situaciones especiales.</div><div class="compact-item"><b>Evidencia</b>Demostrar que el control funciona en la práctica.</div></div></div><div class="model-block"><h3>Qué no debemos inferir</h3><div class="compact-list"><div class="compact-item"><b>Dotación fija</b>JCI no debe convertirse en una relación automática camas/farmacéutico.</div><div class="compact-item"><b>IA autónoma</b>Un motor de reglas no sustituye por sí solo la responsabilidad profesional.</div><div class="compact-item"><b>Un único horario</b>La cobertura se diseña según riesgo, operación y normativa.</div><div class="compact-item"><b>100% alertas manuales</b>La tecnología puede filtrar y priorizar sin perder trazabilidad.</div></div></div></div><div class="portfolio-note"><b>Lectura para Otamendi:</b> el objetivo es garantizar la revisión requerida concentrando el tiempo farmacéutico donde existe riesgo clínico. KPI transversal: <b>% de prescripciones que requieren intervención farmacéutica + minutos farmacéuticos por prescripción</b>.</div></div>'''
+          s=s[:start]+new+s[end:]
+          s=s.replace('<div class="m"><b>TS/HIS</b><span>integración pendiente</span></div>','<div class="m"><b>24/7</b><span>modelo objetivo</span></div>')
+          p.write_text(s,encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Render complete pharmacotherapy JCI content'
+          git push
