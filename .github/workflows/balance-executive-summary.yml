@@ -1,0 +1,42 @@
+name: Balance executive summary
+on:
+  push:
+    paths:
+      - '.github/workflows/balance-executive-summary.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply balanced executive summary
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          css='''<style id="exec-balance-v25">
+          #res>.g2{align-items:stretch;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+          #res>.g2>.block{display:flex;flex-direction:column;min-height:250px;padding:14px}
+          #res>.g2>.block h3{min-height:34px;margin:7px 0 8px;font-size:15px;line-height:1.15}
+          #res>.g2>.block>.g4{margin-top:2px;min-height:68px;align-items:start}
+          #res>.g2>.block>.status{margin-top:10px;grid-template-columns:1fr 1fr}
+          #res>.g2>.block>.actions{margin-top:auto;padding-top:10px}
+          #res>.decisiongrid{display:none!important}
+          #res>.note{margin-top:9px}
+          @media(max-width:900px){#res>.g2{grid-template-columns:1fr}#res>.g2>.block{min-height:auto}}
+          </style>'''
+          if 'id="exec-balance-v25"' not in s:
+              s=s.replace('</head>',css+'</head>')
+          # Remove stale H1 decision wording even if hidden by CSS.
+          s=s.replace('¿H1 es clínicamente seguro y operacionalmente viable para pasar a PoC controlado?','¿El pre-triage detecta potenciales Rojo/Naranja con seguridad suficiente para avanzar a un piloto controlado?')
+          p.write_text(s,encoding='utf-8')
+      - name: Commit dashboard update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Equalize executive project cards and remove decision quadrant"
+          git push
