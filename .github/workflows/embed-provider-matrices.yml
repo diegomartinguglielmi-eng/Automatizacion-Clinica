@@ -5,6 +5,7 @@ on:
     paths:
       - 'triage-providers.html'
       - 'pharma-providers.html'
+      - '.github/workflows/embed-provider-matrices.yml'
 jobs:
   patch:
     runs-on: ubuntu-latest
