@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "16/09/2026"
+    "lastUpdated": "17/09/2026"
   },
   "argentina": [
     {
@@ -294,6 +294,54 @@
     }
   ],
   "supplierCriteria": [
+    {
+      "criterion": "Nivel de autonomía H0–H4",
+      "certuma": "H1/H2 potencial · autonomía final a validar",
+      "oops": "H2 · IA sugiere; validación profesional requerida",
+      "knidian": "H2/H3 · CDS para profesional; revisión obligatoria",
+      "guardia": "H1 potencial · IA deriva por urgencia; alcance a validar",
+      "uma": "H1 potencial · resolución/derivación automatizada; alcance de urgencias a validar"
+    },
+    {
+      "criterion": "Intervención profesional",
+      "certuma": "Por excepción en screening; decisión clínica final a validar",
+      "oops": "Obligatoria para validar clasificación ESI",
+      "knidian": "Obligatoria · uso profesional, no directo a pacientes",
+      "guardia": "Médico posterior al triage en flujo publicado",
+      "uma": "Puede resolver sin humano en flujos digitales; % no publicado"
+    },
+    {
+      "criterion": "Evidencia de implementación",
+      "certuma": "Producto institucional disponible · caso hospitalario comparable no publicado",
+      "oops": "Plataforma institucional disponible · métricas productivas públicas no identificadas",
+      "knidian": "Piloto de triage telefónico en San Miguel · no guardia hospitalaria productiva",
+      "guardia": "Producto/tótem comercial con triage IA · métricas hospitalarias públicas a validar",
+      "uma": "Casos productivos digitales LATAM · Farmatodo: +120k consultas; +7k interacciones IA/mes"
+    },
+    {
+      "criterion": "Integración / interoperabilidad",
+      "certuma": "API disponible · integración con HCE",
+      "oops": "API institucional · JSON clínico · trazabilidad auditable",
+      "knidian": "REST API · integración EHR/EMR",
+      "guardia": "API + plataforma propia + telemetría IoT",
+      "uma": "Integración con canales propios · arquitectura cloud; HL7/FHIR a validar para este caso"
+    },
+    {
+      "criterion": "Costo enterprise",
+      "certuma": "No público · cotizar setup + run + variable",
+      "oops": "No público · cotizar setup + run + variable",
+      "knidian": "No público · pricing según uso y organización",
+      "guardia": "No público · cotizar software + tótem/telemetría si aplica",
+      "uma": "No público · cotizar setup + run + variable"
+    },
+    {
+      "criterion": "Brecha principal para Otamendi",
+      "certuma": "Demostrar H1 real, escala hospitalaria e integración ThinkSoft",
+      "oops": "Reducir validación obligatoria si se busca H1; validar regulación y seguridad",
+      "knidian": "No es hoy solución autónoma paciente→triage; validar adaptación del producto",
+      "guardia": "Confirmar algoritmo, escala clínica, evidencia productiva y % humano",
+      "uma": "Confirmar triage de urgencias, escala clínica, seguridad y % humano"
+    },
     {
       "criterion": "Triage específico",
       "certuma": "✓",
