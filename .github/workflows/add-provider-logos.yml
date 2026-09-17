@@ -1,0 +1,35 @@
+name: Add verified provider logos
+on:
+  push:
+    paths:
+      - '.github/workflows/add-provider-logos.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add provider brand marks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          css=""".supplier-head{display:flex;align-items:center;gap:7px;min-width:150px}.supplier-logo{width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;flex:0 0 auto}.supplier-meta{display:flex;flex-direction:column;line-height:1.12}.supplier-meta b{font-size:9px;color:#51242b}.supplier-meta small{margin-top:3px;font-size:7px;color:#75686c;font-weight:600}"""
+          if '.supplier-head{' not in s:
+              s=s.replace('@media(max-width:1000px)',css+'@media(max-width:1000px)')
+          new_func="""function renderSuppliers(q=''){const ss=DATA.suppliers,rows=DATA.supplierCriteria.filter(r=>r.criterion.toLowerCase().includes(q.toLowerCase()));const domains={'certuma':'certuma.ai','triage':'triage.oops.ar','knidian':'knidian.ai','guardia':'guardiavirtualmedica.com','uma':'umasalud.com'};const domainFor=s=>{const k=(s.id||s.name||'').toLowerCase();if(k.includes('certuma'))return domains.certuma;if(k.includes('triage')||k.includes('oops'))return domains.triage;if(k.includes('knidian'))return domains.knidian;if(k.includes('guardia'))return domains.guardia;if(k.includes('uma')||k.includes('üma'))return domains.uma;return ''};$('#supplierTable').innerHTML='<thead><tr><th>Criterio</th>'+ss.map(s=>{const d=domainFor(s),logo=d?'https://www.google.com/s2/favicons?domain='+encodeURIComponent(d)+'&sz=128':'';return `<th><div class="supplier-head">${logo?`<img class="supplier-logo" src="${logo}" alt="Logo ${esc(s.name)}">`:''}<span class="supplier-meta"><b>${esc(s.name)}</b><small>${esc(s.country)}</small></span></div></th>`}).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr><td class="crit">'+esc(r.criterion)+'</td>'+ss.map(s=>`<td>${esc(r[s.id])}</td>`).join('')+'</tr>').join('')+'</tbody>'}"""
+          s2,n=re.subn(r"function renderSuppliers\(q=''\)\{.*?\}(?=fetch\('triage-data\.json')",new_func,s,count=1)
+          if n!=1:
+              raise SystemExit(f'renderSuppliers replacement count={n}')
+          p.write_text(s2)
+          PY
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Show verified provider logos in comparison table"
+          git push
