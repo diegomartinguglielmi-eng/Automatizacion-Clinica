@@ -1,0 +1,98 @@
+name: Enhance TRIAGE providers
+on:
+  push:
+    paths:
+      - '.github/workflows/enhance-triage-providers.yml'
+permissions:
+  contents: write
+jobs:
+  enhance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update provider evidence and screen
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p=Path('triage-data.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          suppliers=d.get('suppliers',[])
+
+          def sid(fragment):
+              fragment=fragment.lower()
+              for s in suppliers:
+                  if fragment in (s.get('name','')+' '+s.get('id','')).lower():
+                      return s['id']
+              return None
+          ids={
+            'certuma':sid('certuma'), 'triage':sid('triage') or sid('oops'),
+            'knidian':sid('knidian'), 'guardia':sid('guardia'), 'uma':sid('üma') or sid('uma')
+          }
+          def row(label, vals):
+              r={'criterion':label}
+              for k,v in vals.items():
+                  if ids.get(k): r[ids[k]]=v
+              return r
+
+          strategic=[
+            row('Nivel de autonomía H0–H4',{
+              'certuma':'H1/H2 potencial · autonomía final a validar',
+              'triage':'H2 · IA sugiere; validación profesional requerida',
+              'knidian':'H2/H3 · CDS para profesional; revisión obligatoria',
+              'guardia':'H1 potencial · IA deriva por urgencia; alcance a validar',
+              'uma':'H1 potencial · resolución/derivación automatizada; alcance de urgencias a validar'}),
+            row('Intervención profesional',{
+              'certuma':'Por excepción en screening; decisión clínica final a validar',
+              'triage':'Obligatoria para validar clasificación ESI',
+              'knidian':'Obligatoria · uso profesional, no directo a pacientes',
+              'guardia':'Médico posterior al triage en flujo publicado',
+              'uma':'Puede resolver sin humano en flujos digitales; % no publicado'}),
+            row('Evidencia de implementación',{
+              'certuma':'Producto institucional disponible · caso hospitalario comparable no publicado',
+              'triage':'Plataforma institucional disponible · métricas productivas públicas no identificadas',
+              'knidian':'Piloto de triage telefónico en San Miguel · no guardia hospitalaria productiva',
+              'guardia':'Producto/tótem comercial con triage IA · métricas hospitalarias públicas a validar',
+              'uma':'Casos productivos digitales LATAM · Farmatodo: +120k consultas; +7k interacciones IA/mes'}),
+            row('Integración / interoperabilidad',{
+              'certuma':'API disponible · integración con HCE',
+              'triage':'API institucional · JSON clínico · trazabilidad auditable',
+              'knidian':'REST API · integración EHR/EMR',
+              'guardia':'API + plataforma propia + telemetría IoT',
+              'uma':'Integración con canales propios · arquitectura cloud; HL7/FHIR a validar para este caso'}),
+            row('Costo enterprise',{
+              'certuma':'No público · cotizar setup + run + variable',
+              'triage':'No público · cotizar setup + run + variable',
+              'knidian':'No público · pricing según uso y organización',
+              'guardia':'No público · cotizar software + tótem/telemetría si aplica',
+              'uma':'No público · cotizar setup + run + variable'}),
+            row('Brecha principal para Otamendi',{
+              'certuma':'Demostrar H1 real, escala hospitalaria e integración ThinkSoft',
+              'triage':'Reducir validación obligatoria si se busca H1; validar regulación y seguridad',
+              'knidian':'No es hoy solución autónoma paciente→triage; validar adaptación del producto',
+              'guardia':'Confirmar algoritmo, escala clínica, evidencia productiva y % humano',
+              'uma':'Confirmar triage de urgencias, escala clínica, seguridad y % humano'})
+          ]
+          old=d.get('supplierCriteria',[])
+          labels={r['criterion'] for r in strategic}
+          d['supplierCriteria']=strategic+[r for r in old if r.get('criterion') not in labels]
+          d['meta']['lastUpdated']='17/09/2026'
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          ip=Path('index.html')
+          html=ip.read_text(encoding='utf-8')
+          old='<div id="proveedores" class="triage-sub" hidden><div class="toolbar"><h2>Comparativa de proveedores</h2><input id="supplierSearch" placeholder="Filtrar criterio..."></div><div class="table-wrap"><table id="supplierTable"></table></div></div>'
+          new='''<div id="proveedores" class="triage-sub" hidden><div class="toolbar"><div><h2>Comparativa de proveedores</h2><div style="font-size:9px;color:var(--muted);margin-top:3px">Objetivo de evaluación: <b style="color:var(--brand)">H1 · intervención profesional por excepción</b></div></div><input id="supplierSearch" placeholder="Filtrar criterio..."></div><div class="grid g4" style="margin:0 0 8px"><div class="p-card"><span class="tag">AUTONOMÍA</span><h3>H0–H4 demostrado</h3><p>Distinguir capacidad funcional de autonomía clínica real.</p></div><div class="p-card"><span class="tag">SEGURIDAD</span><h3>Intervención profesional</h3><p>Medir qué porcentaje de episodios consume tiempo profesional.</p></div><div class="p-card"><span class="tag">EVIDENCIA</span><h3>Producción comparable</h3><p>Separar producto, piloto y operación productiva a escala.</p></div><div class="p-card"><span class="tag">ECONOMÍA</span><h3>Costo por episodio</h3><p>Setup + run + variable + costo humano residual.</p></div></div><div class="table-wrap" style="max-height:calc(100vh - 245px)"><table id="supplierTable"></table></div></div>'''
+          if old not in html:
+              raise SystemExit('Provider screen anchor not found')
+          html=html.replace(old,new)
+          ip.write_text(html,encoding='utf-8')
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html triage-data.json
+          git commit -m "Align TRIAGE providers with H1 evaluation" || exit 0
+          git push
