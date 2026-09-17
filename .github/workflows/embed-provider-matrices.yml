@@ -1,0 +1,36 @@
+name: Embed provider matrices
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'triage-providers.html'
+      - 'pharma-providers.html'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch provider sections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          tri='''<section id="triprov" class="view"><h2 class="sectiontitle">TRIAGE IA · Proveedores</h2><div class="hero"><div class="ey">EVIDENCIA Y ANÁLISIS · COMPARATIVA TECNOLÓGICA</div><h2>Proveedores evaluados para el objetivo H1</h2><p>Se recupera el detalle del reporte anterior y se separa capacidad declarada de evidencia productiva. La autonomía H1 debe demostrarse en el contexto de Otamendi.</p></div><iframe src="triage-providers.html" title="Comparativa de proveedores TRIAGE IA" style="width:100%;height:72vh;border:0;margin-top:8px;border-radius:12px;background:#fff"></iframe></section>'''
+          far='''<section id="farprov" class="view"><h2 class="sectiontitle">Farmacia · Proveedores y tecnología</h2><div class="hero"><div class="ey">EVIDENCIA Y ANÁLISIS · DECISIÓN TECNOLÓGICA</div><h2>ThinkSoft primero; motor externo sólo si existe una brecha demostrada</h2><p>Se recupera el detalle de alternativas del reporte anterior y se compara función, integración, madurez, economía y pregunta de decisión para Otamendi.</p></div><iframe src="pharma-providers.html" title="Comparativa de proveedores de validación farmacoterapéutica" style="width:100%;height:72vh;border:0;margin-top:8px;border-radius:12px;background:#fff"></iframe></section>'''
+          s,n1=re.subn(r'<section id="triprov" class="view">.*?</section>(?=<section id="tripoc")',tri,s,flags=re.S)
+          s,n2=re.subn(r'<section id="farprov" class="view">.*?</section>(?=<section id="dem")',far,s,flags=re.S)
+          if n1!=1 or n2!=1: raise SystemExit(f'replacements failed tri={n1} far={n2}')
+          s=s.replace('TABLERO DE TRABAJO · V2.2','TABLERO DE TRABAJO · V2.3')
+          p.write_text(s)
+          PY
+      - name: Commit dashboard update
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet || git commit -m "Embed detailed provider evidence matrices"
+          git push
