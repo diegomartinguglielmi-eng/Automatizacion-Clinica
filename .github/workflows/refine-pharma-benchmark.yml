@@ -1,0 +1,31 @@
+name: Build pharmacotherapy benchmark screen
+on:
+  push:
+    paths:
+      - '.github/workflows/refine-pharma-benchmark.yml'
+permissions:
+  contents: write
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace pharmacotherapy benchmark
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.index('<div id="p-ben" class="pharma-sub">')
+          end=s.index('<div id="p-prov" class="pharma-sub">', start)
+          new='''<div id="p-ben" class="pharma-sub"><div class="hero"><div class="eyebrow">VALIDACIÓN FARMACOTERAPÉUTICA · BENCHMARK</div><h2>El benchmark no apunta a validar todo manualmente, sino a identificar qué órdenes realmente necesitan juicio farmacéutico</h2><p>La práctica internacional combina revisión prospectiva, soporte de decisión clínica, revisión remota y autoverificación selectiva. El punto de diseño para Otamendi es cuánto riesgo puede filtrar el sistema sin perder seguridad ni trazabilidad.</p><div class="flow"><span class="node">Orden electrónica</span><span class="arrow">→</span><span class="node">Reglas + datos clínicos</span><span class="arrow">→</span><span class="node">Estratificación de riesgo</span><span class="arrow">→</span><span class="node">Autoverificación selectiva</span><span class="arrow">/</span><span class="node">Farmacéutico</span></div></div><div class="grid g4"><div class="p-card"><span class="tag">ADOPCIÓN</span><div class="metric">≈3/4</div><h3>Hospitales con alguna autoverificación</h3><p>Encuestas recientes de ASHP muestran uso extendido de herramientas del EHR que autoverifican determinadas órdenes. No implica autoverificación universal.</p></div><div class="p-card"><span class="tag">MODELO</span><h3>Selectivo, no indiscriminado</h3><p>Las órdenes dentro de parámetros predefinidos pueden seguir una vía automática; las que quedan fuera pasan a revisión farmacéutica.</p></div><div class="p-card"><span class="tag">EXCLUSIONES</span><h3>El riesgo define la excepción</h3><p>Pediatría, alergias/interacciones, medicamentos de alto riesgo y órdenes verbales aparecen entre exclusiones frecuentes de autoverificación.</p></div><div class="p-card"><span class="tag">COBERTURA</span><h3>24/7 puede ser híbrido</h3><p>Cuando no existe presencia farmacéutica continua, la revisión remota es una alternativa utilizada para mantener acceso oportuno a revisión profesional.</p></div></div><div class="model-bottom" style="margin-top:9px"><div class="model-block"><h3>Modelos operativos observados</h3><div class="compact-list"><div class="compact-item"><b>Revisión universal</b>Toda orden nueva/modificada entra a la cola farmacéutica antes de administración, salvo excepciones definidas.</div><div class="compact-item"><b>Priorización por riesgo</b>CDS/reglas ordenan la cola para que el farmacéutico atienda primero los casos de mayor riesgo.</div><div class="compact-item"><b>Autoverificación selectiva</b>Órdenes de bajo riesgo que cumplen reglas salen de la cola manual; las excepciones escalan.</div><div class="compact-item"><b>Revisión remota</b>Farmacéuticos fuera del sitio sostienen cobertura cuando no hay disponibilidad local.</div></div></div><div class="model-block"><h3>Qué significa para Otamendi</h3><div class="threshold-grid"><div class="threshold"><span>Modelo base</span><b>Riesgo + excepción</b></div><div class="threshold"><span>Objetivo 24/7</span><b>Cobertura híbrida</b></div><div class="threshold"><span>Autoverificación</span><b>Selectiva · a validar</b></div><div class="threshold"><span>Alto riesgo / críticos</span><b>Farmacéutico</b></div><div class="threshold"><span>KPI principal</span><b>% intervención</b></div><div class="threshold"><span>KPI capacidad</span><b>min / prescripción</b></div></div></div></div><div class="portfolio-note"><b>Hipótesis de trabajo para Otamendi:</b> no dimensionar Farmacia suponiendo revisión manual uniforme del 100% de las órdenes. Primero medir demanda y riesgo; después determinar qué subconjunto puede ser filtrado/priorizado por tecnología y qué subconjunto debe consumir tiempo farmacéutico. La autoverificación debe considerarse sólo para categorías demostradas como seguras y compatibles con el marco regulatorio y de acreditación aplicable.</div></div>'''
+          s=s[:start]+new+s[end:]
+          p.write_text(s,encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Reframe pharmacotherapy benchmark around risk and autoverification'
+          git push
