@@ -1,0 +1,49 @@
+name: Align pharma JCI seal
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/align-pharma-jci-seal.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch pharma matrix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('pharma-matrix45.html')
+          s=p.read_text()
+          # exact TRIAGE-style gold seal
+          old=".jci{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;padding:2px 5px;border-radius:4px;background:#0067a8;color:white;font-size:7px;font-weight:900;letter-spacing:.06em;vertical-align:1px}.jci::before{content:'✦';font-size:6px;margin-right:3px}"
+          new=".jci-seal{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff4a6,#e0a814 62%,#a97700);border:1px solid #b17c00;box-shadow:inset 0 0 0 2px #ffe889;color:#704b00;font-size:6px;font-weight:900}.jci-cell{text-align:center;white-space:nowrap}"
+          if old not in s: raise SystemExit('old JCI css not found')
+          s=s.replace(old,new)
+          # JCI as its own column, same as TRIAGE
+          oldh='<th>#</th><th>Región</th><th>Institución / referencia</th><th>País</th><th>Nivel</th>'
+          newh='<th>#</th><th>Región</th><th>Institución / referencia</th><th>País</th><th>JCI</th><th>Nivel</th>'
+          if oldh not in s: raise SystemExit('header not found')
+          s=s.replace(oldh,newh)
+          # Hospital Privado Universitario de Córdoba verified JCI accredited (2024)
+          oldcase="['Argentina','Hospital Privado Universitario de Córdoba','Argentina','F2/F3','Prescripción electrónica asistida + intervención farmacéutica','Publicación sobre intervenciones farmacéuticas en sistema de prescripción electrónica asistida.','Tecnología apoya; decisión farmacéutica permanece.',false]"
+          newcase=oldcase[:-6]+'true]'
+          if oldcase not in s: raise SystemExit('HPUC case not found')
+          s=s.replace(oldcase,newcase)
+          # renderer: seal in dedicated column
+          oldrender='<td><span class="inst">${r[1]}</span>${r[7]?\'<span class="jci" title="Acreditación JCI">JCI</span>\':\'\'}</td><td>${r[2]}</td><td class="lvl">${r[3]}</td>'
+          newrender='<td><span class="inst">${r[1]}</span></td><td>${r[2]}</td><td class="jci-cell">${r[7]?\'<span class="jci-seal" title="Acreditación JCI">JCI</span>\':\'—\'}</td><td class="lvl">${r[3]}</td>'
+          if oldrender not in s: raise SystemExit('renderer not found')
+          s=s.replace(oldrender,newrender)
+          s=s.replace('colspan="8"','colspan="9"')
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add pharma-matrix45.html
+          git commit -m "Use TRIAGE-style JCI seals and verify Hospital Privado Córdoba" || exit 0
+          git push
