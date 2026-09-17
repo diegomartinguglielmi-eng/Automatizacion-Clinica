@@ -1,0 +1,75 @@
+name: Align TRIAGE to pre-triage model
+on:
+  push:
+    paths:
+      - '.github/workflows/align-triage-pretriage-model.yml'
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update TRIAGE model across dashboard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html'); s=p.read_text()
+          replacements={
+          '<h3>Modelo H1</h3><p>La IA completa la primera clasificación; Enfermería interviene ante red flags, baja confianza, datos faltantes, población especial o re-triage.</p>':'<h3>Pre-triage digital</h3><p>El tótem realiza un primer screening para detectar potenciales Rojo/Naranja. Si identifica criticidad, el paciente pasa a Shock Room; si no, recibe número y continúa por Admisión antes del triage profesional.</p>',
+          'H1 objetivo · 20–30% intervención humana':'Pre-triage digital · detección Rojo/Naranja',
+          'Medir en PoC':'Validar en PoC',
+          'Shadow → validación → H1 controlado':'Shadow → validación clínica → piloto controlado',
+          'Demostrar H1 + integración':'Demostrar seguridad + integración',
+          'H1 · IA primera capa':'Pre-triage · tótem primera capa',
+          'IA / reglas':'Screening digital',
+          'Enfermería por excepción':'Rojo/Naranja → Shock Room',
+          'Médico':'Admisión → Triage → Médico',
+          'Objetivo H1':'Objetivo actual: pre-triage digital',
+          'modelo H1':'modelo de pre-triage digital',
+          'Modelo H1':'Modelo de pre-triage digital',
+          'H1 controlado':'piloto controlado',
+          'autorizar H1':'autorizar el piloto',
+          'operar H1':'operar el pre-triage',
+          'H1 productivo':'pre-triage productivo',
+          'autonomía H1':'autonomía del pre-triage',
+          'objetivo H1':'objetivo de pre-triage',
+          'H1 en el contexto de Otamendi':'pre-triage seguro en el contexto de Otamendi'
+          }
+          for a,b in replacements.items(): s=s.replace(a,b)
+          # Replace TRIAGE model objective section wholesale when identifiable
+          pat=r'<section id="trimod" class="view">.*?</section>(?=<section id="tridata")'
+          new='''<section id="trimod" class="view"><h2 class="sectiontitle">TRIAGE IA · Modelo objetivo</h2><div class="hero"><div class="ey">MODELO VIGENTE · PRE-TRIAGE DIGITAL</div><h2>Detectar criticidad antes de que el paciente ingrese al circuito administrativo</h2><p>El tótem no reemplaza el triage profesional. Su función inicial es identificar precozmente potenciales Rojo/Naranja y acelerar su acceso a Shock Room.</p><div class="flow"><span class="node">Paciente</span><span class="arr">→</span><span class="node">Tótem · pre-triage</span><span class="arr">→</span><span class="node">¿Rojo/Naranja?</span><span class="arr">→</span><span class="node">Sí: Shock Room</span><span class="arr">|</span><span class="node">No: número</span><span class="arr">→</span><span class="node">Admisión</span><span class="arr">→</span><span class="node">Triage profesional</span><span class="arr">→</span><span class="node">Prioridad</span><span class="arr">→</span><span class="node">Atención médica</span></div></div><div class="g3"><div class="card"><span class="tag">FUNCIÓN DEL TÓTEM</span><h3>Screening de criticidad</h3><p>Captura inicial y clasificación orientada a detectar potenciales Rojo/Naranja antes de Admisión.</p></div><div class="card"><span class="tag">GATE DE SEGURIDAD</span><h3>Rojo/Naranja</h3><p>Ante señal de criticidad, el circuito administrativo se interrumpe y el paciente se deriva a Shock Room.</p></div><div class="card"><span class="tag">RESTO DE PACIENTES</span><h3>Triage profesional permanece</h3><p>Admisión llama por número; luego el consultorio de Triage completa la evaluación y asigna prioridad antes de la atención médica.</p></div></div><div class="note"><b>Evolución:</b> una mayor autonomía del triage podrá evaluarse posteriormente. No forma parte del objetivo inicial hasta demostrar seguridad del pre-triage.</div></section>'''
+          s,n=re.subn(pat,new,s,flags=re.S)
+          if n!=1: raise SystemExit('trimod section not replaced')
+          # TRIAGE simulator: relabel as scenario of workload, not claimed H1 staffing
+          s=s.replace('TRIAGE IA · Simulador de dotación','TRIAGE IA · Simulador de carga y dotación')
+          s=s.replace('Intervención humana (%)','Pacientes que requieren triage profesional (%)')
+          s=s.replace('20–30%','100%')
+          # Header version
+          s=s.replace('TABLERO DE TRABAJO · V2.3','TABLERO DE TRABAJO · V2.4')
+          p.write_text(s)
+          PY
+      - name: Update provider framing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for fn in ['triage-providers.html']:
+            p=Path(fn); s=p.read_text()
+            s=s.replace('Objetivo Otamendi: H1 · primera capa digital con intervención profesional por excepción','Objetivo actual Otamendi: pre-triage digital · detección precoz de potenciales Rojo/Naranja')
+            s=s.replace('autonomía H1','autonomía de triage completo')
+            s=s.replace('Demostrar H1','Demostrar detección segura de Rojo/Naranja')
+            s=s.replace('H1 específicamente en urgencias hospitalarias','detección precoz específicamente en urgencias hospitalarias')
+            s=s.replace('H1 hospitalario productivo','pre-triage hospitalario productivo')
+            s=s.replace('El PoC debe demostrar H1 en el contexto de Otamendi','El PoC debe demostrar sensibilidad y seguridad para detectar Rojo/Naranja en el contexto de Otamendi')
+            p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html triage-providers.html
+          git diff --cached --quiet || git commit -m "Align TRIAGE to pre-triage criticality screening model"
+          git push
