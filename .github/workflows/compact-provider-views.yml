@@ -1,0 +1,41 @@
+name: Compact provider views
+on:
+  push:
+    paths:
+      - '.github/workflows/compact-provider-views.yml'
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compact provider screens
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          # Remove duplicated outer explanatory hero on provider views: the embedded matrix already contains context.
+          tri='''<section id="triprov" class="view"><h2 class="sectiontitle provider-title">TRIAGE IA · Proveedores</h2><iframe class="provider-frame" src="triage-providers.html" title="Comparativa de proveedores TRIAGE IA"></iframe></section>'''
+          far='''<section id="farprov" class="view"><h2 class="sectiontitle provider-title">Farmacia · Proveedores y tecnología</h2><iframe class="provider-frame" src="pharma-providers.html" title="Comparativa de proveedores de validación farmacoterapéutica"></iframe></section>'''
+          s,n1=re.subn(r'<section id="triprov" class="view">.*?</section>(?=<section id="tripoc")',tri,s,flags=re.S)
+          s,n2=re.subn(r'<section id="farprov" class="view">.*?</section>(?=<section id="dem")',far,s,flags=re.S)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f'provider replacement failed tri={n1} far={n2}')
+          css='''<style id="provider-viewport-fit">.provider-title{font-size:15px;margin:0 0 4px}.provider-frame{display:block;width:100%;height:calc(100vh - 82px);min-height:560px;border:0;border-radius:10px;background:#fff}@media(max-height:800px){.provider-frame{height:calc(100vh - 72px)}.provider-title{font-size:14px;margin-bottom:3px}}</style>'''
+          if 'id="provider-viewport-fit"' not in s:
+              s=s.replace('</head>',css+'</head>')
+          else:
+              s=re.sub(r'<style id="provider-viewport-fit">.*?</style>',css,s,flags=re.S)
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet || git commit -m "Compact provider views for full-screen fit"
+          git push
