@@ -1,0 +1,61 @@
+name: Compact pharma model full screen
+on:
+  push:
+    paths: ['.github/workflows/compact-pharma-model-fullscreen.yml']
+permissions:
+  contents: write
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='</style></head>'
+          css='''<style>
+          #p-mod.active{height:calc(100vh - 78px);overflow:hidden;display:grid;grid-template-rows:150px 180px 190px 1fr;gap:7px}
+          #p-mod .hero{padding:10px 14px;border-radius:10px}
+          #p-mod .hero .eyebrow{font-size:7px}
+          #p-mod .hero h2{font-size:18px;margin:3px 0 4px;line-height:1.05}
+          #p-mod .hero p{font-size:8px;line-height:1.25}
+          #p-mod .hero .flow{margin-top:7px;gap:4px}
+          #p-mod .hero .node{padding:4px 6px;font-size:7px}
+          #p-mod .model-wide,#p-mod .model-block{padding:8px 10px;border-radius:10px;box-shadow:none}
+          #p-mod .model-wide h3,#p-mod .model-block h3{font-size:11px}
+          #p-mod .model-subtitle{font-size:7px;margin-top:2px}
+          #p-mod .branch-flow{margin-top:6px;gap:6px;grid-template-columns:minmax(250px,.8fr) minmax(0,1.6fr)}
+          #p-mod .flow-pill{padding:4px 6px;font-size:7px}
+          #p-mod .branch-paths{gap:4px}
+          #p-mod .branch-row{grid-template-columns:minmax(130px,1.15fr) 12px minmax(105px,.85fr) 12px minmax(90px,.65fr);gap:3px}
+          #p-mod .branch-condition,#p-mod .branch-action,#p-mod .branch-result{padding:5px 6px;font-size:6.8px}
+          #p-mod .model-note{margin-top:5px;padding:6px 8px;font-size:7px;line-height:1.25}
+          #p-mod .model-middle{gap:7px;grid-template-columns:.9fr 1.25fr .9fr}
+          #p-mod .compact-list{gap:4px;margin-top:5px}
+          #p-mod .compact-item{padding:4px 5px;font-size:6.6px;line-height:1.18}
+          #p-mod .compact-item b{margin-bottom:1px}
+          #p-mod .trigger-list{gap:3px;margin-top:5px}
+          #p-mod .trigger{padding:3px 5px;font-size:6.3px}
+          #p-mod .model-bottom{gap:7px;grid-template-columns:1.2fr .8fr}
+          #p-mod .gate-grid{gap:4px;margin-top:5px}
+          #p-mod .gate{padding:5px;font-size:6.4px;line-height:1.18}
+          #p-mod .gate b{font-size:7px;margin-bottom:2px}
+          #p-mod .gate span{margin-top:3px;padding-top:3px}
+          #p-mod .threshold-grid{gap:3px;margin-top:5px}
+          #p-mod .threshold{padding:3px 1px;font-size:6.5px}
+          #p-mod .prelim{font-size:5.8px;padding:1px 4px}
+          #p-mod>.portfolio-note{margin:0;padding:6px 8px;font-size:7px;line-height:1.2}
+          @media(max-height:800px) and (min-width:1001px){#p-mod.active{grid-template-rows:132px 160px 170px 1fr}.top{margin-bottom:6px}.top h1{font-size:23px}.main{padding-top:10px}}
+          </style>'''
+          if '#p-mod.active{height:calc(100vh - 78px)' not in s:
+              s=s.replace(marker,css+marker)
+          p.write_text(s,encoding='utf-8')
+      - shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Compact pharma model to fit full screen' || exit 0
+          git push
