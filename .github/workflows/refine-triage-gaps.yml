@@ -1,0 +1,55 @@
+name: Refine TRIAGE PoC readiness
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/refine-triage-gaps.yml'
+permissions:
+  contents: write
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch TRIAGE readiness screen
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<div id="gaps" class="triage-sub"><div class="toolbar"><h2>Pendientes de validación</h2><input id="gapsSearch" placeholder="Filtrar..."></div><div class="table-wrap"><table><thead><tr><th>Dimensión</th><th>Qué falta</th><th>Por qué importa</th><th>Cómo cerrarlo</th><th>Estado</th></tr></thead><tbody id="gapsTable"></tbody></table></div></div>', '''<div id="gaps" class="triage-sub"><div class="hero" style="padding:12px 15px;margin-bottom:8px"><div class="eyebrow">READINESS · PUERTA DE ENTRADA AL PoC</div><h2 style="font-size:18px;margin:4px 0 6px">Qué debe estar resuelto antes de iniciar el piloto</h2><p>Los pendientes se gestionan como condiciones de habilitación del PoC H1. La salida esperada de cada punto es evidencia verificable, una decisión documentada o una medición de baseline.</p><div class="flow"><span class="node">Clínica & seguridad</span><span class="arrow">→</span><span class="node">Tecnología & datos</span><span class="arrow">→</span><span class="node">Operación</span><span class="arrow">→</span><span class="node">Legal & gobernanza</span><span class="arrow">→</span><span class="node">Economía</span><span class="arrow">→</span><span class="node">GO / NO GO PoC</span></div></div><div class="toolbar"><h2>Checklist de validación</h2><input id="gapsSearch" placeholder="Filtrar..."></div><div class="table-wrap"><table><thead><tr><th>Dimensión</th><th>Condición para avanzar</th><th>Evidencia / entregable</th><th>Criterio de cierre</th><th>Estado</th></tr></thead><tbody id="gapsTable"></tbody></table></div></div>''')
+          old="table('#gapsTable',DATA.gaps,[['dimension','Dimensión'],['gap','Qué falta'],['why','Por qué importa'],['how','Cómo cerrarlo'],['status','Estado']]);"
+          new="table('#gapsTable',DATA.gaps,[['dimension','Dimensión'],['gap','Condición para avanzar'],['why','Evidencia / entregable'],['how','Criterio de cierre'],['status','Estado']]);"
+          if old not in s: raise SystemExit('gaps renderer not found')
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+      - name: Patch readiness data
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          p=Path('triage-data.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          d['gaps']=[
+            {'dimension':'Clínica & seguridad','gap':'Definir protocolo de referencia, poblaciones incluidas/excluidas y reglas de red flags/escalamiento.','why':'Protocolo aprobado + catálogo de red flags + exclusiones + reglas de re-triage.','how':'Aprobación formal de Emergencias/Enfermería y Seguridad del Paciente antes del shadow mode.','status':'Crítico · abierto'},
+            {'dimension':'Clínica & seguridad','gap':'Aprobar metas de seguridad del PoC; no asumir como definitivos ≥95%, <1% o ≥85%.','why':'Documento de métricas: sensibilidad en críticos, under-triage, over-triage, concordancia y eventos adversos.','how':'Metas y método de cálculo aprobados antes de evaluar desempeño.','status':'Crítico · abierto'},
+            {'dimension':'Tecnología & datos','gap':'Validar integración real con ThinkSoft y arquitectura de intercambio.','why':'Mapa de integración: identidad, episodio, signos vitales, prioridad, timestamps, auditoría y resultado; APIs/HL7/FHIR si aplica.','how':'Factibilidad técnica confirmada y alcance de integración del PoC documentado.','status':'Crítico · abierto'},
+            {'dimension':'Tecnología & datos','gap':'Definir captura digital y disponibilidad/calidad de datos en el punto de ingreso.','why':'Campos obligatorios, dispositivos/tótem, validaciones, manejo de dato faltante y baseline de completitud.','how':'Dataset mínimo definido y prueba de captura satisfactoria.','status':'Abierto'},
+            {'dimension':'Operación','gap':'Medir baseline AS-IS de triage y carga profesional con la demanda real.','why':'Tiempo a clasificación, minutos de Enfermería por episodio, distribución horaria, retriage y % de episodios que requieren intervención.','how':'Baseline medido sobre muestra suficiente para comparar contra shadow mode y PoC.','status':'Crítico · abierto'},
+            {'dimension':'Operación','gap':'Definir circuito H1 de excepción y contingencia ante caída o baja confianza.','why':'Flujo operativo con responsables, SLA, escalamiento, downtime y retorno a triage convencional.','how':'Circuito probado en simulación y responsables asignados.','status':'Abierto'},
+            {'dimension':'Proveedor','gap':'Seleccionar solución para PoC por autonomía demostrable, seguridad, integración y evidencia; no sólo funcionalidades.','why':'Matriz final de proveedores + demo clínica + referencias + evidencia H0–H4 + brechas.','how':'Proveedor/alternativa de PoC seleccionado y alcance técnico-clínico acordado.','status':'Abierto'},
+            {'dimension':'Legal & gobernanza','gap':'Definir responsabilidad clínica, consentimiento/información al paciente, privacidad y uso de datos/IA.','why':'Dictamen o validación de Legales/Compliance + Seguridad de la Información + gobernanza del modelo.','how':'Condiciones legales y de datos aprobadas para el alcance del PoC.','status':'Crítico · abierto'},
+            {'dimension':'Trazabilidad','gap':'Garantizar registro auditable de recomendación IA, versión, datos de entrada, escalamiento y decisión humana.','why':'Especificación de auditoría y evidencia de logs end-to-end.','how':'100% de episodios del PoC trazables y recuperables.','status':'Requerido'},
+            {'dimension':'Economía','gap':'Construir business case con costo tecnológico y costo humano residual.','why':'Setup amortizado + run fijo + variable + minutos profesionales residuales / episodios.','how':'Costo por episodio y escenarios de volumen comparables con AS-IS.','status':'Abierto'},
+            {'dimension':'PoC','gap':'Definir diseño, muestra, duración, criterios de detención y regla GO / ADJUST / NO GO.','why':'Protocolo de PoC con etapas shadow → validación obligatoria → H1 por excepción.','how':'Protocolo aprobado con criterios explícitos de avance y detención.','status':'Crítico · abierto'}
+          ]
+          d['meta']['lastUpdated']='17/09/2026'
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+"\n",encoding='utf-8')
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html triage-data.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Turn TRIAGE gaps into PoC readiness checklist'
+          git push
