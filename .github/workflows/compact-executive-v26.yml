@@ -1,0 +1,31 @@
+name: Compact executive cards
+on:
+  push:
+    paths:
+      - '.github/workflows/compact-executive-v26.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Adjust executive summary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('''<style id="exec-balance-v25">\n#res>.g2{align-items:stretch;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}\n#res>.g2>.block{display:flex;flex-direction:column;min-height:250px;padding:14px}\n#res>.g2>.block h3{min-height:34px;margin:7px 0 8px;font-size:15px;line-height:1.15}\n#res>.g2>.block>.g4{margin-top:2px;min-height:68px;align-items:start}\n#res>.g2>.block>.status{margin-top:10px;grid-template-columns:1fr 1fr}\n#res>.g2>.block>.actions{margin-top:auto;padding-top:10px}\n#res>.decisiongrid{display:none!important}\n#res>.note{margin-top:9px}\n@media(max-width:900px){#res>.g2{grid-template-columns:1fr}#res>.g2>.block{min-height:auto}}\n</style>''','''<style id="exec-balance-v26">\n#res>.g2{align-items:stretch;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}\n#res>.g2>.block{display:grid;grid-template-rows:auto auto auto auto;align-content:start;padding:14px;min-height:0}\n#res>.g2>.block h3{min-height:36px;margin:7px 0 8px;font-size:15px;line-height:1.15}\n#res>.g2>.block>.g4{margin:2px 0 8px;min-height:0;align-items:start}\n#res>.g2>.block>.status{margin-top:0;grid-template-columns:1fr 1fr}\n#res>.g2>.block>.actions{margin-top:8px;padding-top:0}\n#res>.decisiongrid{display:none!important}\n#res>.note{margin-top:9px}\n@media(max-width:900px){#res>.g2{grid-template-columns:1fr}}\n</style>''')
+          s=s.replace('<div><div class="metric">100%</div><div class="small">hipótesis humana</div></div>','<div><div class="metric" style="font-size:15px">Rojo/Naranja</div><div class="small">screening crítico</div></div>',1)
+          s=s.replace('TABLERO DE TRABAJO · V2.4','TABLERO DE TRABAJO · V2.5',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Compact executive cards and align project spacing'
+          git push
