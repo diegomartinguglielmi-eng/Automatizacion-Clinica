@@ -1,0 +1,26 @@
+name: Align pharma benchmark to TRIAGE pattern
+on:
+  push:
+    paths:
+      - '.github/workflows/align-pharma-benchmark-triage.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          start=s.index('<div id="p-ben" class="pharma-sub">'); end=s.index('<div id="p-prov" class="pharma-sub">',start)
+          new='''<div id="p-ben" class="pharma-sub"><div class="hero"><div class="eyebrow">BENCHMARK INTERNACIONAL · SÍNTESIS DE 45 CASOS</div><h2>La diferencia no está en digitalizar la prescripción, sino en cuánto de la validación puede resolverse sin revisión farmacéutica sistemática</h2><p>El benchmark compara el nivel de automatización de la revisión de órdenes y dónde se concentra el juicio farmacéutico.</p><div class="flow"><span class="node">F0 Autoverificación selectiva</span><span class="arrow">→</span><span class="node">F1 Priorización automatizada</span><span class="arrow">→</span><span class="node">F2 Validación asistida</span><span class="arrow">→</span><span class="node">F3 Validación digital sistemática</span><span class="arrow">→</span><span class="node">F4 Predominio manual</span></div></div><div class="grid g4"><div class="p-card"><span class="tag">01 · AUTOMATIZACIÓN</span><h3>La brecha está en F0–F1</h3><p>Argentina y LATAM muestran principalmente validación farmacéutica apoyada por prescripción electrónica y reglas. Los precedentes de autoverificación selectiva más maduros aparecen en sistemas internacionales.</p></div><div class="p-card"><span class="tag">02 · DIGITAL ≠ AUTÓNOMO</span><h3>Prescripción electrónica no elimina revisión</h3><p>Tener CPOE, alertas o trazabilidad digital no significa que una orden pueda liberarse sin revisión farmacéutica.</p></div><div class="p-card"><span class="tag">03 · MODELO SELECTIVO</span><h3>La automatización se limita por riesgo</h3><p>Pediatría, alergias/interacciones, alto riesgo, órdenes verbales y situaciones clínicas complejas suelen quedar fuera de la vía automática.</p></div><div class="p-card"><span class="tag">04 · ESCALA</span><div class="metric">73,4%</div><h3>Uso de alguna autoverificación</h3><p>Encuesta ASHP 2023: hospitales de EE.UU. con algún uso de autoverificación en EHR; no implica validación automática universal.</p></div></div><div class="grid g3"><div class="p-card"><span class="tag">ARGENTINA + LATAM</span><div class="metric">Predominio F2–F3</div><h3>Farmacéutico dentro del circuito</h3><p>La evidencia regional relevada muestra validación clínica apoyada por sistemas, con escasa publicación de órdenes liberadas automáticamente sin revisión individual.</p></div><div class="p-card"><span class="tag">INTERNACIONAL</span><div class="metric">F0–F1</div><h3>Precedentes productivos</h3><p>La autoverificación selectiva y los algoritmos de priorización permiten retirar de la cola manual órdenes definidas como de bajo riesgo.</p></div><div class="p-card"><span class="tag">CASOS FARO</span><h3>UNC · Wisconsin · Mayo / Advocate</h3><p>Los casos publicados muestran selección por riesgo, algoritmos con guardrails y validación de seguridad antes de ampliar alcance.</p></div></div><div class="portfolio-note"><b>Lectura para Otamendi:</b> el objetivo del PoC no es automatizar el 100% de las prescripciones. Debe medir qué proporción puede atravesar una primera capa automática con seguridad y concentrar al farmacéutico en riesgo y excepciones. KPI transversal: <b>% de órdenes que requieren intervención farmacéutica + minutos farmacéuticos por prescripción.</b></div><div style="display:flex;justify-content:center;margin-top:10px"><a href="pharma-matrix45.html" style="text-decoration:none;background:var(--brand);color:#fff;border-radius:9px;padding:9px 14px;font-size:10px;font-weight:850">Ver matriz completa · 45 casos ↓</a></div></div>'''
+          s=s[:start]+new+s[end:]; p.write_text(s,encoding='utf-8')
+      - shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Align pharma benchmark summary with TRIAGE pattern' || exit 0
+          git push
