@@ -1,0 +1,35 @@
+name: Integrate benchmark into portfolio
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/integrate-benchmark.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Integrate unified TRIAGE benchmark
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<button data-triage="argentina">Benchmark Argentina</button><button data-triage="latam">Benchmark LATAM</button>','<button data-triage="benchmark">Benchmark</button>')
+          start=s.find('<div id="argentina" class="triage-sub">')
+          end=s.find('<div id="proveedores" class="triage-sub"', start)
+          if start!=-1 and end!=-1:
+              panel='<div id="benchmark" class="triage-sub"><iframe src="benchmark-panel.html" title="Benchmark TRIAGE IA" style="width:100%;height:calc(100vh - 86px);border:0;display:block;background:#fbf9f9"></iframe></div>'
+              s=s[:start]+panel+s[end:]
+          s=s.replace("title.textContent='TRIAGE IA';sub.textContent='Análisis de demanda · alternativas tecnológicas · modelo operativo'","title.textContent=b.dataset.triage==='benchmark'?'Benchmark de Triage con IA':'TRIAGE IA';sub.textContent=b.dataset.triage==='benchmark'?'45 casos · Argentina, LATAM e Internacional · autonomía · recurso humano · JCI':'Análisis de demanda · alternativas tecnológicas · modelo operativo'")
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit integrated benchmark
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Integrate unified TRIAGE benchmark into portfolio"
+          git push
